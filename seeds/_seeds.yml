@@ -1,0 +1,12 @@
+version: 2
+
+seeds:
+  - name: tlc_payment_types
+    description: TLC yellow-trip payment_type codes (TLC data dictionary). Shared reference data.
+    config:
+      column_types:
+        payment_type: int
+        payment_type_name: varchar(30)
+    columns:
+      - name: payment_type
+        data_tests: [unique, not_null]

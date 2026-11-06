@@ -1,0 +1,28 @@
+-- Rename and type only. No filtering: every bronze row reaches int_trips__validated,
+-- which decides between mobility.trips and mobility.trips_rejected.
+select
+    cast(vendor_id as int)                      as vendor_id,
+    cast(tpep_pickup_datetime as datetime2(6))  as pickup_at,
+    cast(tpep_dropoff_datetime as datetime2(6)) as dropoff_at,
+    cast(passenger_count as int)                as passenger_count,
+    cast(trip_distance as decimal(12, 2))       as trip_distance_miles,
+    cast(ratecode_id as int)                    as ratecode_id,
+    cast(store_and_fwd_flag as varchar(1))      as store_and_fwd_flag,
+    cast(pu_location_id as int)                 as pickup_location_id,
+    cast(do_location_id as int)                 as dropoff_location_id,
+    cast(payment_type as int)                   as payment_type,
+    cast(fare_amount as decimal(12, 2))         as fare_amount,
+    cast(extra as decimal(12, 2))               as extra_amount,
+    cast(mta_tax as decimal(12, 2))             as mta_tax_amount,
+    cast(tip_amount as decimal(12, 2))          as tip_amount,
+    cast(tolls_amount as decimal(12, 2))        as tolls_amount,
+    cast(improvement_surcharge as decimal(12, 2)) as improvement_surcharge_amount,
+    cast(congestion_surcharge as decimal(12, 2))  as congestion_surcharge_amount,
+    cast(airport_fee as decimal(12, 2))         as airport_fee_amount,
+    cast(total_amount as decimal(12, 2))        as total_amount,
+    cast(_source_year as int)                   as source_year,
+    cast(_source_month as int)                  as source_month,
+    cast(_source_file as varchar(100))          as source_file,
+    cast(_run_id as varchar(100))               as bronze_run_id,
+    cast(_ingested_at as datetime2(6))          as bronze_ingested_at
+from {{ source('nyctlc', 'nyc_tlc_yellow_trips') }}

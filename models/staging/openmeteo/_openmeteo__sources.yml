@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: openmeteo
+    database: lh_bronze_openmeteo
+    schema: dbo
+    tables:
+      - name: open_meteo_weather_daily
+        description: Daily NYC weather from the Open-Meteo archive API, one row per date.

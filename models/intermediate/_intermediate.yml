@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: int_trips__validated
+    description: Every bronze trip plus the first cleaning rule it fails (rejection_reason, NULL = clean).
+    columns:
+      - name: rejection_reason
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - missing_timestamp
+                  - dropoff_before_pickup
+                  - pickup_outside_source_month
+                  - implausible_duration
+                  - negative_distance
+                  - negative_amount
+                  - unknown_pickup_zone
+                  - unknown_dropoff_zone
+
+# Cleaning rules (Definition of done: "Silver cleaning rules covered by tests").
+# One case per rule plus a clean row and a priority check. Zones 1 and 2 exist; 999 does not.
+# Base trip: Jan 2024, 08:00 → 08:20, 3.1 mi, $15 fare, $20 total, zones 1 → 2.
+unit_tests:
+  - name: test_trip_cleaning_rules
+    model: int_trips__validated
+    given:
+      - input: ref('stg_nyctlc__taxi_zones')
+        rows:
+          - {location_id: 1}
+          - {location_id: 2}
+      - input: ref('stg_nyctlc__yellow_trips')
+        rows:
+          # 1 clean
+          - {vendor_id: 1, pickup_at: "2024-01-15 08:00:00", dropoff_at: "2024-01-15 08:20:00", trip_distance_miles: 3.1, fare_amount: 15.0, total_amount: 20.0, pickup_location_id: 1, dropoff_location_id: 2, source_year: 2024, source_month: 1}
+          # 2 missing timestamp
+          - {vendor_id: 2, pickup_at: null, dropoff_at: "2024-01-15 08:20:00", trip_distance_miles: 3.1, fare_amount: 15.0, total_amount: 20.0, pickup_location_id: 1, dropoff_location_id: 2, source_year: 2024, source_month: 1}
+          # 3 dropoff before pickup
+          - {vendor_id: 3, pickup_at: "2024-01-15 08:20:00", dropoff_at: "2024-01-15 08:00:00", trip_distance_miles: 3.1, fare_amount: 15.0, total_amount: 20.0, pickup_location_id: 1, dropoff_location_id: 2, source_year: 2024, source_month: 1}
+          # 4 stray date from an older file period (TLC files contain these)
+          - {vendor_id: 4, pickup_at: "2009-01-01 00:05:00", dropoff_at: "2009-01-01 00:15:00", trip_distance_miles: 3.1, fare_amount: 15.0, total_amount: 20.0, pickup_location_id: 1, dropoff_location_id: 2, source_year: 2024, source_month: 1}
+          # 5 longer than 24h
+          - {vendor_id: 5, pickup_at: "2024-01-15 08:00:00", dropoff_at: "2024-01-16 08:01:00", trip_distance_miles: 3.1, fare_amount: 15.0, total_amount: 20.0, pickup_location_id: 1, dropoff_location_id: 2, source_year: 2024, source_month: 1}
+          # 6 negative distance
+          - {vendor_id: 6, pickup_at: "2024-01-15 08:00:00", dropoff_at: "2024-01-15 08:20:00", trip_distance_miles: -1.0, fare_amount: 15.0, total_amount: 20.0, pickup_location_id: 1, dropoff_location_id: 2, source_year: 2024, source_month: 1}
+          # 7 negative fare (refund/void)
+          - {vendor_id: 7, pickup_at: "2024-01-15 08:00:00", dropoff_at: "2024-01-15 08:20:00", trip_distance_miles: 3.1, fare_amount: -15.0, total_amount: -20.0, pickup_location_id: 1, dropoff_location_id: 2, source_year: 2024, source_month: 1}
+          # 8 unknown pickup zone
+          - {vendor_id: 8, pickup_at: "2024-01-15 08:00:00", dropoff_at: "2024-01-15 08:20:00", trip_distance_miles: 3.1, fare_amount: 15.0, total_amount: 20.0, pickup_location_id: 999, dropoff_location_id: 2, source_year: 2024, source_month: 1}
+          # 9 unknown dropoff zone (NULL id counts as unknown)
+          - {vendor_id: 9, pickup_at: "2024-01-15 08:00:00", dropoff_at: "2024-01-15 08:20:00", trip_distance_miles: 3.1, fare_amount: 15.0, total_amount: 20.0, pickup_location_id: 1, dropoff_location_id: null, source_year: 2024, source_month: 1}
+          # 10 fails two rules → earliest rule wins
+          - {vendor_id: 10, pickup_at: "2024-01-15 08:20:00", dropoff_at: "2024-01-15 08:00:00", trip_distance_miles: -1.0, fare_amount: 15.0, total_amount: 20.0, pickup_location_id: 1, dropoff_location_id: 2, source_year: 2024, source_month: 1}
+          # 11 exactly 24h, zero distance, zero fare → boundaries are clean
+          - {vendor_id: 11, pickup_at: "2024-01-15 08:00:00", dropoff_at: "2024-01-16 08:00:00", trip_distance_miles: 0.0, fare_amount: 0.0, total_amount: 0.0, pickup_location_id: 1, dropoff_location_id: 2, source_year: 2024, source_month: 1}
+    expect:
+      rows:
+        - {vendor_id: 1, rejection_reason: null}
+        - {vendor_id: 2, rejection_reason: missing_timestamp}
+        - {vendor_id: 3, rejection_reason: dropoff_before_pickup}
+        - {vendor_id: 4, rejection_reason: pickup_outside_source_month}
+        - {vendor_id: 5, rejection_reason: implausible_duration}
+        - {vendor_id: 6, rejection_reason: negative_distance}
+        - {vendor_id: 7, rejection_reason: negative_amount}
+        - {vendor_id: 8, rejection_reason: unknown_pickup_zone}
+        - {vendor_id: 9, rejection_reason: unknown_dropoff_zone}
+        - {vendor_id: 10, rejection_reason: dropoff_before_pickup}
+        - {vendor_id: 11, rejection_reason: null}
+
+  - name: test_zone_na_becomes_null
+    model: stg_nyctlc__taxi_zones
+    given:
+      - input: source('nyctlc', 'nyc_tlc_taxi_zone_lookup')
+        rows:
+          - {location_id: 1, borough: "EWR", zone: "Newark Airport", service_zone: "EWR"}
+          - {location_id: 265, borough: "N/A", zone: "Outside of NYC", service_zone: " N/A "}
+    expect:
+      rows:
+        - {location_id: 1, borough: "EWR", zone_name: "Newark Airport", service_zone: "EWR"}
+        - {location_id: 265, borough: null, zone_name: "Outside of NYC", service_zone: null}

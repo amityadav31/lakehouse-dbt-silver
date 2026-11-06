@@ -1,0 +1,13 @@
+# Local runs only. The Fabric dbt job item supplies its own connection.
+# export FABRIC_SQL_ENDPOINT=<id>.datawarehouse.fabric.microsoft.com   (wh_silver → Settings → SQL endpoint)
+# then `az login` once; ActiveDirectoryDefault picks up the Azure CLI token.
+silver:
+  target: dev
+  outputs:
+    dev:
+      type: fabric
+      host: "{{ env_var('FABRIC_SQL_ENDPOINT') }}"
+      database: wh_silver
+      schema: dbo
+      authentication: ActiveDirectoryDefault
+      threads: 1   # Fabric Warehouse deadlocks on concurrent DDL (catalog locks)

@@ -1,0 +1,147 @@
+version: 2
+
+# Published silver contract for the Mobility domain. Gold reads mobility.trips only.
+# Changing a column name or type here is a breaking change for gold_mobility and gold_finance.
+
+models:
+  - name: trips
+    description: >
+      Cleaned yellow-taxi trips, one row per trip that passed every rule in int_trips__validated.
+      Amounts in USD, distance in miles. Full reload each run.
+    config:
+      access: public
+    columns:
+      - name: vendor_id
+        data_type: int
+      - name: pickup_at
+        data_type: datetime2(6)
+        constraints: [{type: not_null}]
+      - name: dropoff_at
+        data_type: datetime2(6)
+        constraints: [{type: not_null}]
+      - name: pickup_date
+        data_type: date
+        constraints: [{type: not_null}]
+      - name: trip_duration_minutes
+        data_type: decimal(10, 2)
+        constraints: [{type: not_null}]
+      - name: passenger_count
+        data_type: int
+        description: NULL in the source for a share of trips; kept as NULL.
+      - name: trip_distance_miles
+        data_type: decimal(12, 2)
+      - name: ratecode_id
+        data_type: int
+      - name: store_and_fwd_flag
+        data_type: varchar(1)
+      - name: pickup_location_id
+        data_type: int
+        constraints: [{type: not_null}]
+        data_tests:
+          - relationships: {arguments: {to: ref('zones'), field: location_id}}
+      - name: dropoff_location_id
+        data_type: int
+        constraints: [{type: not_null}]
+        data_tests:
+          - relationships: {arguments: {to: ref('zones'), field: location_id}}
+      - name: payment_type
+        data_type: int
+        data_tests:
+          - relationships:
+              arguments: {to: ref('payment_types'), field: payment_type}
+              config: {severity: warn}
+      - name: fare_amount
+        data_type: decimal(12, 2)
+      - name: extra_amount
+        data_type: decimal(12, 2)
+      - name: mta_tax_amount
+        data_type: decimal(12, 2)
+      - name: tip_amount
+        data_type: decimal(12, 2)
+      - name: tolls_amount
+        data_type: decimal(12, 2)
+      - name: improvement_surcharge_amount
+        data_type: decimal(12, 2)
+      - name: congestion_surcharge_amount
+        data_type: decimal(12, 2)
+      - name: airport_fee_amount
+        data_type: decimal(12, 2)
+      - name: total_amount
+        data_type: decimal(12, 2)
+      - name: source_file
+        data_type: varchar(100)
+      - name: bronze_run_id
+        data_type: varchar(100)
+      - name: bronze_ingested_at
+        data_type: datetime2(6)
+
+  - name: trips_rejected
+    description: >
+      Quarantined bronze trips that failed a cleaning rule, with the first rule failed.
+      Monitoring only: not a gold input.
+    config:
+      access: protected
+    columns:
+      - name: rejection_reason
+        data_type: varchar(30)
+        constraints: [{type: not_null}]
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - missing_timestamp
+                  - dropoff_before_pickup
+                  - pickup_outside_source_month
+                  - implausible_duration
+                  - negative_distance
+                  - negative_amount
+                  - unknown_pickup_zone
+                  - unknown_dropoff_zone
+      - name: vendor_id
+        data_type: int
+      - name: pickup_at
+        data_type: datetime2(6)
+      - name: dropoff_at
+        data_type: datetime2(6)
+      - name: passenger_count
+        data_type: int
+      - name: trip_distance_miles
+        data_type: decimal(12, 2)
+      - name: ratecode_id
+        data_type: int
+      - name: store_and_fwd_flag
+        data_type: varchar(1)
+      - name: pickup_location_id
+        data_type: int
+      - name: dropoff_location_id
+        data_type: int
+      - name: payment_type
+        data_type: int
+      - name: fare_amount
+        data_type: decimal(12, 2)
+      - name: extra_amount
+        data_type: decimal(12, 2)
+      - name: mta_tax_amount
+        data_type: decimal(12, 2)
+      - name: tip_amount
+        data_type: decimal(12, 2)
+      - name: tolls_amount
+        data_type: decimal(12, 2)
+      - name: improvement_surcharge_amount
+        data_type: decimal(12, 2)
+      - name: congestion_surcharge_amount
+        data_type: decimal(12, 2)
+      - name: airport_fee_amount
+        data_type: decimal(12, 2)
+      - name: total_amount
+        data_type: decimal(12, 2)
+      - name: source_year
+        data_type: int
+      - name: source_month
+        data_type: int
+      - name: source_file
+        data_type: varchar(100)
+      - name: bronze_run_id
+        data_type: varchar(100)
+      - name: bronze_ingested_at
+        data_type: datetime2(6)
