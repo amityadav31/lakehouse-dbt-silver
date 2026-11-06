@@ -1,0 +1,41 @@
+version: 2
+
+# Shared master data (≈ MDM golden record). Every gold domain may read these.
+
+models:
+  - name: zones
+    description: TLC taxi zones. 'N/A' in the source is surfaced as NULL.
+    config:
+      access: public
+    constraints:
+      - type: primary_key
+        name: pk_reference_zones
+        columns: [location_id]
+    columns:
+      - name: location_id
+        data_type: int
+        constraints: [{type: not_null}]
+        data_tests: [unique]
+      - name: borough
+        data_type: varchar(50)
+      - name: zone_name
+        data_type: varchar(100)
+      - name: service_zone
+        data_type: varchar(50)
+
+  - name: payment_types
+    description: TLC payment_type codes and names (from the tlc_payment_types seed).
+    config:
+      access: public
+    constraints:
+      - type: primary_key
+        name: pk_reference_payment_types
+        columns: [payment_type]
+    columns:
+      - name: payment_type
+        data_type: int
+        constraints: [{type: not_null}]
+        data_tests: [unique]
+      - name: payment_type_name
+        data_type: varchar(30)
+        constraints: [{type: not_null}]

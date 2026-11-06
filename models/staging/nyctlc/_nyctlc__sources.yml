@@ -1,0 +1,13 @@
+version: 2
+
+# Bronze lakehouse, read through its SQL analytics endpoint (same workspace → 3-part names).
+# Refresh the endpoint after the bronze notebook writes, or the Warehouse may see stale data (D1).
+sources:
+  - name: nyctlc
+    database: lh_bronze_nyctlc
+    schema: dbo
+    tables:
+      - name: nyc_tlc_yellow_trips
+        description: Yellow-taxi trips, one row per trip, partitioned by _source_year/_source_month.
+      - name: nyc_tlc_taxi_zone_lookup
+        description: TLC taxi zone lookup (location_id → borough/zone).

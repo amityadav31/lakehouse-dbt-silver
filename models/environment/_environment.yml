@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: weather_daily
+    description: >
+      Daily NYC weather, one row per date. Units: °C, mm (precipitation, rain), cm (snowfall), km/h (wind).
+      weather_code is the WMO code returned by Open-Meteo.
+    config:
+      access: public
+    constraints:
+      - type: primary_key
+        name: pk_environment_weather_daily
+        columns: [weather_date]
+    columns:
+      - name: weather_date
+        data_type: date
+        constraints: [{type: not_null}]
+        data_tests: [unique]
+      - name: latitude
+        data_type: decimal(9, 6)
+      - name: longitude
+        data_type: decimal(9, 6)
+      - name: timezone
+        data_type: varchar(50)
+      - name: temperature_max_c
+        data_type: decimal(5, 1)
+      - name: temperature_min_c
+        data_type: decimal(5, 1)
+      - name: temperature_mean_c
+        data_type: decimal(5, 1)
+      - name: precipitation_mm
+        data_type: decimal(6, 1)
+      - name: rain_mm
+        data_type: decimal(6, 1)
+      - name: snowfall_cm
+        data_type: decimal(6, 2)
+      - name: wind_speed_max_kmh
+        data_type: decimal(5, 1)
+      - name: weather_code
+        data_type: int
+      - name: source_file
+        data_type: varchar(200)
+      - name: bronze_run_id
+        data_type: varchar(100)
+      - name: bronze_ingested_at
+        data_type: datetime2(6)

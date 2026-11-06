@@ -1,0 +1,36 @@
+name: silver
+version: "1.0.0"
+config-version: 2
+profile: silver
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]   # singular tests go here when needed
+macro-paths: ["macros"]
+
+models:
+  silver:
+    # Private to silver: staging/intermediate are views that gold must never read.
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: staging
+    # Published, contracted domain models (full load, D7).
+    mobility:
+      +materialized: table
+      +schema: mobility
+      +contract: {enforced: true}
+    reference:
+      +materialized: table
+      +schema: reference
+      +contract: {enforced: true}
+    environment:
+      +materialized: table
+      +schema: environment
+      +contract: {enforced: true}
+
+seeds:
+  silver:
+    +schema: staging
