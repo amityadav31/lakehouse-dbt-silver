@@ -1,0 +1,3 @@
+# Local dbt toolchain. Python 3.11–3.13. Fabric dbt job runtime 1.0 uses dbt-core 1.11 + dbt-fabric 1.10.
+dbt-core~=1.12.0
+dbt-fabric~=1.12.0
