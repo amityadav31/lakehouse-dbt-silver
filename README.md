@@ -25,6 +25,7 @@ lh_bronze_* (SQL endpoint) → staging.stg_*                        views: renam
 |---|---|
 | Concurrent DDL in one Warehouse deadlocks (error 1205) | `threads: 1` (profile locally, job setting in Fabric) |
 | dbt's unit-test temp tables survive the end-of-test ROLLBACK (Fabric DDL is transactional) | `macros/materializations/unit_fabric.sql` |
+| Unit tests fail in the Fabric dbt job with error 16214 "Nested CTE cannot be used in this query" (dbt wraps the fixture CTEs in another `WITH`) | same macro: test SQL goes into a temp view, no nested `WITH` |
 | dbt's default schema naming gives `dbo_mobility` | `macros/generate_schema_name.sql` |
 
 ## Run in Fabric (dbt job `dbt_silver`, workspace folder `02_silver`)
